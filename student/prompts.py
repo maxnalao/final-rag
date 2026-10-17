@@ -5,16 +5,13 @@ from student import settings
 def build_mc_prompt(question: str, options: list[tuple[str, str]], hits) -> list[dict]:
     """prompt สำหรับข้อสอบปรนัย"""
     system_prompt = (
-        "You are an expert Thai exam solver with meticulous reading comprehension.\n"
-        "Your task is to identify the single correct multiple-choice option based strictly on the Reference Context.\n\n"
-        "Rules:\n"
-        "1. Context Authority: Base your decision entirely on the provided Context text and tables. Never guess.\n"
-        "2. Table Interpretation: Check table row values, discount types, amounts, and minimum spends carefully.\n"
-        "3. Negative Phrasing: Pay extreme attention if the question asks for NOT/FALSE ('ไม่ใช่', 'ไม่ถูกต้อง', 'ยกเว้น').\n"
-        "4. Output Requirement: You must output ONLY a valid JSON object with the following schema:\n"
-        '   {"answer": "<key>"}\n'
-        "   where <key> is strictly one of the option letters provided (e.g. \"ก\", \"ข\", \"ค\", \"ง\", \"จ\").\n"
-        "5. Do NOT include markdown blocks, reasons, or any conversational text. Return raw JSON only."
+        "You are an expert Thai academic evaluator with flawless accuracy.\n"
+        "Instructions:\n"
+        "1. Strictly base your answer on the provided Reference Context.\n"
+        "2. Check every detail in tables, conditions, numbers, and negative queries ('ไม่ใช่', 'ไม่ถูกต้อง', 'ยกเว้น').\n"
+        "3. Output strictly valid JSON with keys:\n"
+        '   "answer": "<exact option key: ก, ข, ค, ง, or จ>"\n'
+        "4. Do NOT include any markdown fences or conversational text outside the JSON."
     )
 
     context_parts = []
@@ -31,10 +28,7 @@ def build_mc_prompt(question: str, options: list[tuple[str, str]], hits) -> list
                 total_chars += len(text)
 
     context_str = "\n\n---\n\n".join(context_parts) if context_parts else "ไม่มีเอกสารอ้างอิง"
-
-    # จัดรูปแบบตัวเลือกให้อ่านง่าย ชัดเจนทุกบรรทัด
-    options_lines = [f"{key}. {text}" for key, text in options]
-    options_str = "\n".join(options_lines)
+    options_str = "\n".join([f"{key}. {text}" for key, text in options])
 
     user_content = (
         f"[เอกสารอ้างอิง]\n{context_str}\n\n"
@@ -52,21 +46,21 @@ def build_mc_prompt(question: str, options: list[tuple[str, str]], hits) -> list
 def build_code_prompt(requirement: str, signature: str | None, entry_point: str | None, hits) -> list[dict]:
     """prompt สำหรับโจทย์เขียนโปรแกรม"""
     system_prompt = (
-        "You are an expert Python engineer.\n"
-        "Strict Implementation Rules:\n"
-        "1. ALWAYS include all necessary standard library imports inside the code (e.g. `import re`).\n"
-        "2. Coupon Format & Validation:\n"
-        "   - Standardize inputs with `.strip().upper()` immediately.\n"
-        "   - The coupon code format is `BB-` followed by exactly 4 alphanumeric characters (letters/digits `[A-Z0-9]{4}`), hyphen `-`, and 2 digits (e.g. `^BB-[A-Z0-9]{4}-\\d{2}$`).\n"
-        "3. Discount Rules (CRITICAL):\n"
-        "   - Look at the table carefully to check the discount type:\n"
-        "     * If discount is a FIXED AMOUNT (e.g. 30 บาท), return the exact fixed amount as a float (e.g. 30.0). DO NOT multiply the fixed amount by the purchase total!\n"
-        "     * If discount is a PERCENTAGE (e.g. 10%), return `(purchase_amount * percentage) / 100.0`.\n"
+        "You are an expert Python software engineer.\n"
+        "Strict Implementation Guidelines:\n"
+        "1. ALWAYS include all necessary standard library imports inside the code (e.g., `import re`, `import math`).\n"
+        "2. Coupon Validation Rules (CRITICAL):\n"
+        "   - Must be CASE-INSENSITIVE (convert input strings using `.strip().upper()` immediately).\n"
+        "   - Format is `BB-` prefix, followed by exactly 4 alphanumeric characters (letters/digits `[A-Z0-9]{4}`), a hyphen `-`, and 2 digits (e.g. `^BB-[A-Z0-9]{4}-\\d{2}$`).\n"
+        "3. Discount Calculation Rules (CRITICAL):\n"
+        "   - Read the coupon table in the context carefully:\n"
+        "     * If discount type is a fixed amount (e.g. 30 บาท), return the exact float value (e.g. 30.0). DO NOT multiply by the purchase amount!\n"
+        "     * If discount type is a percentage (e.g. 10%), return `(purchase_amount * percentage) / 100.0`.\n"
         "   - ALWAYS check the minimum spend (ยอดซื้อขั้นต่ำ) FIRST. If `bill_amount < minimum_spend`, the discount is STRICTLY 0.0.\n"
-        "   - If coupon is unknown, invalid, or does not meet minimum spend, return 0.0.\n"
-        "   - Return a float value for the discount amount.\n"
-        "4. Do NOT use input() or print(). Return values directly.\n"
-        "5. Output ONLY the code inside a single ```python ``` block."
+        "   - If coupon is invalid, unknown, expired, or does not meet minimum spend, return 0.0.\n"
+        "   - Return a float value for monetary discounts, bool for validations.\n"
+        "4. Exact signature & entry point name must be preserved. Do NOT use input() or print(). Return values directly.\n"
+        "5. Return ONLY the code inside a single ```python ``` block."
     )
 
     context_parts = []
